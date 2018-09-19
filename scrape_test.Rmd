@@ -1,0 +1,87 @@
+---
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+latex_engine: xelatex
+params:
+  url: "http://tieba.baidu.com/p/5882162728?see_lz=1"
+  file_number: 1
+  father_path: 'D:/Desktop/SimingStrategy'
+---
+``` {r message=FALSE, warning=FALSE, include=FALSE}
+# DESC: This program used to generate PDF files automatically.
+# DATE: 2018/09/19
+# NAME: likewen623
+# ID: 容夏@流月城
+# ENCODING: UTF-8
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(rvest)
+file_number = params$file_number
+
+url <- read_html(params$url)
+
+title <- html_nodes(url, "#j_p_postlist .clearfix , .BDE_Image , .vpic_play")##
+
+### Author
+title_author <- html_nodes(url, ".p_author_name")
+author = html_text(title_author, trim = TRUE)[[1]]
+
+#### Author URL
+author_url = paste0("http://tieba.baidu.com", xml_attrs(title_author[[1]])[["href"]])
+
+### Header
+title_header <- html_nodes(url, ".core_title_txt")
+header = html_text(title_header, trim = TRUE)[[1]]
+
+### video
+video_url = data.frame(matrix(NA,length(title),1))
+names(video_url) <- 'video_url'
+
+for (i in 1:length(title)){
+  if(grepl("vsrc=", title[[i]]) == TRUE){
+    video_url[i,1] <- xml_attrs(xml_child(title[[i]], 2))[["vsrc"]]
+  }
+}
+```
+## `r header`  
+
+作者：[`r author`](`r author_url`)       
+编号：`r file_number`
+
+
+```{r echo=FALSE, results='asis', warning=FALSE}
+data.path = params$father_path
+setwd(data.path)
+
+dir_name = paste0('./strategy_', file_number, '/')
+dir.create(dir_name)
+setwd(dir_name)
+
+
+count = 0
+for (i in 1:length(title)){
+  if (is.na(html_attr(title, "src")[[i]]) == TRUE){cat(" ***\n")}
+  cat(html_text(title[[i]], trim = TRUE), ' \n\n\n')
+  if (is.na(video_url[i, 1]) == FALSE){
+    cat("视频地址：")
+    cat(video_url[i,1])
+    cat('.  \n\n  ')
+  }
+  if (is.na(html_attr(title, "src")[[i]]) == FALSE){
+    count = count +1
+    img_name <- paste0(file_number, '_', count, '.jpg')
+    download.file(html_attr(title, "src")[[5]], img_name, method="curl")
+    cat("![](",img_name,")")
+  }
+}
+
+```
+
+
